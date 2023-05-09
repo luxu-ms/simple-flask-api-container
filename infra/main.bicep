@@ -1,5 +1,3 @@
-targetScope = 'subscription'
-
 @minLength(1)
 @maxLength(64)
 @description('Name which is used to generate a short unique hash for each resource')
@@ -7,7 +5,7 @@ param name string
 
 @minLength(1)
 @description('Primary location for all resources')
-param location string
+param location string = resourceGroup().location
 
 @description('The image name for the api service')
 param apiImageName string = ''
@@ -18,21 +16,14 @@ param principalId string = ''
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }
 
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: '${name}-rg'
-  location: location
-  tags: tags
-}
-
 var prefix = '${name}-${resourceToken}'
 
 
 // Store secrets in a keyvault
 module keyVault './core/security/keyvault.bicep' = {
   name: 'keyvault'
-  scope: resourceGroup
   params: {
-    name: '${take(replace(prefix, '-', ''), 17)}-vault'
+    name: 'kv-${take(replace(prefix, '-', ''), 17)}'
     location: location
     tags: tags
     principalId: principalId
@@ -42,12 +33,11 @@ module keyVault './core/security/keyvault.bicep' = {
 // Container apps host (including container registry)
 module containerApps 'core/host/container-apps.bicep' = {
   name: 'container-apps'
-  scope: resourceGroup
   params: {
     name: 'app'
     location: location
-    containerAppsEnvironmentName: '${prefix}-containerapps-env'
-    containerRegistryName: '${replace(prefix, '-', '')}registry'
+    containerAppsEnvironmentName: 'cae-${prefix}'
+    containerRegistryName: 'cr${replace(prefix, '-', '')}'
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.outputs.name
   }
 }
@@ -55,9 +45,8 @@ module containerApps 'core/host/container-apps.bicep' = {
 // API app
 module api 'api.bicep' = {
   name: 'api'
-  scope: resourceGroup
   params: {
-    name: '${take(prefix,19)}-containerapp'
+    name: 'ca-${take(prefix,19)}'
     location: location
     imageName: apiImageName
     containerAppsEnvironmentName: containerApps.outputs.environmentName
@@ -69,9 +58,8 @@ module api 'api.bicep' = {
 
 module logAnalyticsWorkspace 'core/monitor/loganalytics.bicep' = {
   name: 'loganalytics'
-  scope: resourceGroup
   params: {
-    name: '${prefix}-loganalytics'
+    name: 'log-${prefix}'
     location: location
     tags: tags
   }
