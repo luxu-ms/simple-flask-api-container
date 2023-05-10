@@ -1,115 +1,31 @@
 This repository includes a simple Python Flask API with a single route that returns JSON.
 You can use this project as a starting point for your own APIs.
 
-The repository is designed for use with [Docker containers](https://www.docker.com/), both for local development and deployment, and includes infrastructure files for deployment to [Azure Container Apps](https://learn.microsoft.com/azure/container-apps/overview). 🐳
+## Prerequisites
+* Docker 
+* Azure Deployment Environment has provisioned the environment
 
-The code is organized using [Flask Blueprints](https://flask.palletsprojects.com/en/2.2.x/blueprints/),
-tested with [pytest](https://docs.pytest.org/en/7.2.x/),
-linted with [ruff](https://github.com/charliermarsh/ruff), and formatted with [black](https://black.readthedocs.io/en/stable/).
-Code quality issues are all checked with both [pre-commit](https://pre-commit.com/) and Github actions.
+## Quickstart
+1. Clone this repo
 
-## Opening the project
+2. Go to the folder "src", ensure you have login to docker server. 
+```
+docker login <Container Registry Server>
+```
+>NOTE: You can go to Azure Portal and find the "Access Keys" info in Azure Container Registry which is provisioned by ADE.
 
-This project has [Dev Container support](https://code.visualstudio.com/docs/devcontainers/containers), so it will be be setup automatically if you open it in Github Codespaces or in local VS Code with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
+use docker build to create the image.
+```
+docker build -t <Container Registry Server>/simple-flask-api-container:0.0.1 .
+```
 
-If you're not using one of those options for opening the project, then you'll need to:
+After the build completed, use docker push to upload to container registry.
+```
+docker push <Container Registry Server>/simple-flask-api-container:0.0.1
+```
 
-1. Create a [Python virtual environment](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments) and activate it.
+3. Go to Container Apps in Azure Portal, select the Container App provisioned, click "Containers", click "Edit and Deploy", select the container image and click "Edit". 
+4. Select "Azure Container Registry" for "Image Source", select "Registry", "Image" and "Image tag" and click "Save", click "Create". Wait a while to let it take effect.
 
-2. Install the requirements:
-
-    ```shell
-    python3 -m pip install -r src/requirements-dev.txt
-    ```
-
-3. Install the pre-commit hooks:
-
-    ```shell
-    pre-commit install
-    ```
-
-## Local development
-
-1. Run the local server:
-
-    ```shell
-    python3 -m flask --debug --app src/app:app run --port 5000
-    ```
-
-3. Click 'http://127.0.0.1:5000' in the terminal, which should open a new tab in the browser.
-
-4. Try the API at '/generate_name' and try passing in a parameter at the end of the URL, like '/generate_name?start_with=N'.
-
-### Local development with Docker
-
-You can also run this app with Docker, thanks to the `Dockerfile`.
-You need to either have Docker Desktop installed or have this open in Github Codespaces for these commands to work.
-
-1. Build the image:
-
-    ```
-    docker build --tag flask-app src/
-    ```
-
-2. Run the image:
-
-    ```
-    docker run --publish 5000:5000 flask-app
-    ```
-
-### Deployment
-
-This repo is set up for deployment on Azure Container Apps using the configuration files in the `infra` folder.
-
-This diagram shows the architecture of the deployment:
-
-![Diagram of app architecture: Azure Container Apps environment, Azure Container App, Azure Container Registry, Container, and Key Vault](readme_diagram.png)
-
-Steps for deployment:
-
-1. Sign up for a [free Azure account](https://azure.microsoft.com/free/)
-2. Install the [Azure Dev CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd). (If you opened this repository in a devcontainer, that part will be done for you.)
-3. Initialize a new `azd` environment:
-
-    ```shell
-    azd init
-    ```
-
-    It will prompt you to provide a name (like "flask-app") that will later be used in the name of the deployed resources.
-    
-3. Provision and deploy all the resources:
-
-    ```shell
-    azd up
-    ```
-
-    It will prompt you to login, pick a subscription, and provide a location (like "eastus"). Then it will provision the resources in your account and deploy the latest code. If you get an error with deployment, changing the location (like to "centralus") can help, as there may be availability constraints for some of the resources.
-
-4. When `azd` has finished deploying, you'll see an endpoint URI in the command output. Visit that URI, and you should see the API output! 🎉
-
-5. When you've made any changes to the app code, you can just run:
-
-    ```shell
-    azd deploy
-    ```
-
-### Costs
-
-Pricing varies per region and usage, so it isn't possible to predict exact costs for your usage.
-The majority of the Azure resources used in this infrastructure are on usage-based pricing tiers.
-However, Azure Container Registry has a fixed cost per registry per day.
-
-You can try the [Azure pricing calculator](https://azure.com/e/a0b45ff4228d46baa8ca1dbd15d62afa) for the resources:
-
-- Azure Container App: Consumption tier with 0.5 CPU, 1GiB memory/storage. Pricing is based on resource allocation, and each month allows for a certain amount of free usage. [Pricing](https://azure.microsoft.com/pricing/details/container-apps/)
-- Azure Container Registry: Basic tier. [Pricing](https://azure.microsoft.com/pricing/details/container-registry/)
-- Key Vault: Standard tier. Costs are per transaction, a few transactions are used on each deploy. [Pricing](https://azure.microsoft.com/pricing/details/key-vault/)
-- Log analytics: Pay-as-you-go tier. Costs based on data ingested. [Pricing](https://azure.microsoft.com/pricing/details/monitor/)
-
-⚠️ To avoid unnecessary costs, remember to take down your app if it's no longer in use,
-either by deleting the resource group in the Portal or running `azd down`.
-
-
-## Getting help
-
-If you're working with this project and running into issues, please post in **Discussions**.
+## How to verify
+Go to your Container App's overview, click "Application Url" and add "/generate_name" in the URL, there will be a generated name.

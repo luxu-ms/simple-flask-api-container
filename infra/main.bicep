@@ -1,7 +1,7 @@
 @minLength(1)
 @maxLength(64)
 @description('Name which is used to generate a short unique hash for each resource')
-param name string
+param environmentName string = 'test'
 
 @minLength(1)
 @description('Primary location for all resources')
@@ -13,11 +13,10 @@ param apiImageName string = ''
 @description('Id of the user or app to assign application roles')
 param principalId string = ''
 
-var resourceToken = toLower(uniqueString(subscription().id, name, location))
-var tags = { 'azd-env-name': name }
+var resourceToken = toLower(uniqueString(resourceGroup().id, location))
+var tags = { 'azd-env-name': environmentName }
 
-var prefix = '${name}-${resourceToken}'
-
+var prefix = '${environmentName}-${resourceToken}'
 
 // Store secrets in a keyvault
 module keyVault './core/security/keyvault.bicep' = {

@@ -10,4 +10,5 @@ parameters:
     name: environmentName
     description: 'Name of the Environment'
     type: string
-    required: true
+    required: false
+    default: 'test'
